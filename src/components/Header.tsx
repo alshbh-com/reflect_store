@@ -1,9 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { Moon, Sun, Phone, MessageCircle } from "lucide-react";
 import { useTheme } from "@/lib/theme";
+import { useAppSettings } from "@/lib/use-app-settings";
 
-export function Header({ title = "Reflect" }: { title?: string }) {
+export function Header({ title }: { title?: string }) {
   const { theme, toggle } = useTheme();
+  const { data: settings } = useAppSettings();
+  const displayName = title ?? settings?.platform_name ?? "Reflect";
+
   return (
     <header className="sticky top-0 z-30 glass">
       <div className="mx-auto max-w-md px-4 py-3 flex items-center justify-between">
@@ -33,7 +37,10 @@ export function Header({ title = "Reflect" }: { title?: string }) {
           </a>
         </div>
         <Link to="/" className="flex items-center gap-2">
-          <h1 className="text-xl font-bold gradient-text tracking-tight">{title}</h1>
+          {settings?.logo_url ? (
+            <img src={settings.logo_url} alt={displayName} className="size-8 rounded-full object-cover" />
+          ) : null}
+          <h1 className="text-xl font-bold gradient-text tracking-tight">{displayName}</h1>
         </Link>
       </div>
     </header>
