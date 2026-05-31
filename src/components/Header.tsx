@@ -20,7 +20,7 @@ export function Header({ title }: { title?: string }) {
             {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </button>
           <a
-            href="https://wa.me/201013701405"
+            href="https://wa.me/201099068412"
             target="_blank"
             rel="noopener"
             aria-label="WhatsApp"
@@ -29,7 +29,7 @@ export function Header({ title }: { title?: string }) {
             <MessageCircle className="size-4" />
           </a>
           <a
-            href="tel:01013701405"
+            href="tel:+201099068412"
             aria-label="Call"
             className="size-9 grid place-items-center rounded-full bg-secondary/60 text-primary hover:bg-accent transition"
           >
