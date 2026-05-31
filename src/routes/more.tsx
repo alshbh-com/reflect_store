@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Phone, MessageCircle, FileText, Download, Lock, Sparkles } from "lucide-react";
+import { Phone, MessageCircle, FileText, Download, Sparkles } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 
 export const Route = createFileRoute("/more")({
