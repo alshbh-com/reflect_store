@@ -22,7 +22,7 @@ export const Route = createFileRoute("/policies")({
           </div>
           <div>
             <h3 className="font-bold">التواصل</h3>
-            <p className="text-muted-foreground mt-1">اتصال: 01013701405 — واتساب: 01013701405</p>
+            <p className="text-muted-foreground mt-1">اتصال: +201099068412 — واتساب: +201099068412</p>
           </div>
         </div>
       </div>

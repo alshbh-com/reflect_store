@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Phone, MessageCircle, FileText, Download, Lock, Sparkles } from "lucide-react";
+import { Phone, MessageCircle, FileText, Download, Sparkles } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 
 export const Route = createFileRoute("/more")({
@@ -11,7 +11,6 @@ const links = [
   { to: "/track", label: "تتبع الطلب", icon: Sparkles },
   { to: "/policies", label: "سياسة الاستبدال", icon: FileText },
   { to: "/install", label: "تثبيت التطبيق", icon: Download },
-  { to: "/admin", label: "لوحة التحكم", icon: Lock },
 ] as const;
 
 function MorePage() {
@@ -38,14 +37,14 @@ function MorePage() {
 
       <div className="px-4 mt-6 grid grid-cols-2 gap-3">
         <a
-          href="tel:01013701405"
+          href="tel:+201099068412"
           className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-primary/15 to-primary-glow/10 border border-primary/20"
         >
           <Phone className="size-6 text-primary" />
           <span className="text-xs font-bold">اتصل بنا</span>
         </a>
         <a
-          href="https://wa.me/201013701405"
+          href="https://wa.me/201099068412"
           target="_blank"
           rel="noopener"
           className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-emerald-500/15 to-emerald-400/10 border border-emerald-500/20"
