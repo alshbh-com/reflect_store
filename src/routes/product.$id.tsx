@@ -97,17 +97,52 @@ function ProductPage() {
           )}
         </div>
         {gallery.length > 1 && (
-          <div className="absolute bottom-3 inset-x-0 flex justify-center gap-1.5">
-            {gallery.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setImgIdx(i)}
-                className={`h-1.5 rounded-full transition-all ${i === imgIdx ? "w-6 bg-primary" : "w-1.5 bg-white/70"}`}
-              />
-            ))}
-          </div>
+          <>
+            <button
+              onClick={() => setImgIdx((i) => (i - 1 + gallery.length) % gallery.length)}
+              aria-label="السابق"
+              className="absolute top-1/2 -translate-y-1/2 right-2 size-9 rounded-full bg-background/70 backdrop-blur grid place-items-center shadow-soft"
+            >
+              <ChevronRight className="size-5" />
+            </button>
+            <button
+              onClick={() => setImgIdx((i) => (i + 1) % gallery.length)}
+              aria-label="التالي"
+              className="absolute top-1/2 -translate-y-1/2 left-2 size-9 rounded-full bg-background/70 backdrop-blur grid place-items-center shadow-soft"
+            >
+              <ChevronLeft className="size-5" />
+            </button>
+            <span className="absolute top-3 left-3 text-[11px] font-bold bg-background/75 backdrop-blur px-2 py-1 rounded-full">
+              {imgIdx + 1} / {gallery.length}
+            </span>
+            <div className="absolute bottom-3 inset-x-0 flex justify-center gap-1.5">
+              {gallery.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setImgIdx(i)}
+                  className={`h-1.5 rounded-full transition-all ${i === imgIdx ? "w-6 bg-primary" : "w-1.5 bg-white/70"}`}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
+
+      {gallery.length > 1 && (
+        <div className="px-4 mt-3 flex gap-2 overflow-x-auto no-scrollbar">
+          {gallery.map((src, i) => (
+            <button
+              key={i}
+              onClick={() => setImgIdx(i)}
+              className={`shrink-0 size-16 rounded-xl overflow-hidden border-2 transition ${
+                i === imgIdx ? "border-primary shadow-soft" : "border-border/60 opacity-70"
+              }`}
+            >
+              <img src={src} alt="" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="px-4 pt-5">
         <div className="flex items-start justify-between gap-3">
