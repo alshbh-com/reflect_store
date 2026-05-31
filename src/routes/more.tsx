@@ -11,7 +11,6 @@ const links = [
   { to: "/track", label: "تتبع الطلب", icon: Sparkles },
   { to: "/policies", label: "سياسة الاستبدال", icon: FileText },
   { to: "/install", label: "تثبيت التطبيق", icon: Download },
-  { to: "/admin", label: "لوحة التحكم", icon: Lock },
 ] as const;
 
 function MorePage() {
