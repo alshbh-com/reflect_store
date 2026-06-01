@@ -24,9 +24,9 @@ function CartPage() {
             <ShoppingBag className="size-10 text-muted-foreground" />
           </div>
           <h2 className="mt-4 font-bold text-lg">سلتك فارغة</h2>
-          <p className="text-sm text-muted-foreground mt-1">ابدئي التسوق الآن</p>
+          <p className="text-sm text-muted-foreground mt-1">ابدأ التسوق الآن</p>
           <Link to="/" className="mt-6 inline-block bg-primary text-primary-foreground font-semibold px-6 py-2.5 rounded-full">
-            تسوّقي
+            تسوّق
           </Link>
         </div>
       ) : (

@@ -18,7 +18,7 @@ const schema = z.object({
   name: z.string().trim().min(2, "الاسم قصير").max(80),
   phone: z.string().trim().regex(/^01[0-9]{9}$/, "رقم موبايل غير صحيح"),
   address: z.string().trim().min(5, "العنوان قصير").max(200),
-  governorate_id: z.string().uuid("اختاري المحافظة"),
+  governorate_id: z.string().uuid("اختار المحافظة"),
   notes: z.string().max(300).optional(),
 });
 
@@ -112,7 +112,7 @@ function CheckoutPage() {
             <CheckCircle2 className="size-12 text-success" />
           </div>
           <h1 className="mt-5 text-2xl font-bold">تم استلام طلبك</h1>
-          <p className="mt-2 text-sm text-muted-foreground">شكراً لكِ، سنتواصل معكِ قريباً لتأكيد الطلب.</p>
+          <p className="mt-2 text-sm text-muted-foreground">شكراً لك، سنتواصل معك قريباً لتأكيد الطلب.</p>
           <div className="mt-6 mx-auto inline-block glass rounded-2xl px-6 py-4">
             <p className="text-xs text-muted-foreground">رقم الطلب</p>
             <p className="text-2xl font-bold gradient-text mt-1">#{orderNumber}</p>
@@ -159,7 +159,7 @@ function CheckoutPage() {
             onChange={(e) => setForm({ ...form, governorate_id: e.target.value })}
             className={inputCls}
           >
-            <option value="">اختاري المحافظة</option>
+            <option value="">اختار المحافظة</option>
             {govs?.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.name} — شحن {g.shipping_cost} ج.م

@@ -49,7 +49,7 @@ function SearchPage() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="ابحثي عن منتج..."
+            placeholder="ابحث عن منتج..."
             className="w-full h-12 pr-10 pl-4 rounded-2xl bg-card border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition"
           />
         </div>
