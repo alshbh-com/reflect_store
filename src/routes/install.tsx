@@ -10,11 +10,11 @@ export const Route = createFileRoute("/install")({
         <div className="rounded-2xl bg-card border border-border/60 p-4 space-y-3 text-sm">
           <div>
             <h3 className="font-bold">على iPhone</h3>
-            <p className="text-muted-foreground mt-1">افتحي Safari → زر المشاركة → "إضافة إلى الشاشة الرئيسية".</p>
+            <p className="text-muted-foreground mt-1">افتح Safari → زر المشاركة → "إضافة إلى الشاشة الرئيسية".</p>
           </div>
           <div>
             <h3 className="font-bold">على Android</h3>
-            <p className="text-muted-foreground mt-1">افتحي Chrome → القائمة → "تثبيت التطبيق".</p>
+            <p className="text-muted-foreground mt-1">افتح Chrome → القائمة → "تثبيت التطبيق".</p>
           </div>
         </div>
       </div>

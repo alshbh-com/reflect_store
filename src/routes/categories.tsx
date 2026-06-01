@@ -25,7 +25,7 @@ function CategoriesPage() {
     <PageShell>
       <div className="px-4 pt-4">
         <h1 className="text-2xl font-bold">التصنيفات</h1>
-        <p className="text-sm text-muted-foreground mt-1">اختاري قسمكِ المفضل</p>
+        <p className="text-sm text-muted-foreground mt-1">اختار قسمك المفضل</p>
       </div>
       <div className="px-4 mt-4 grid grid-cols-2 gap-3">
         {isLoading

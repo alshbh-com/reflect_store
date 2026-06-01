@@ -22,7 +22,7 @@ export function SectionsGrid() {
               <s.icon className="size-5 text-primary" />
             </div>
             <h3 className="text-sm font-bold text-foreground">{s.label}</h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5">تسوّقي الآن</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">تسوّق الآن</p>
           </Link>
         ))}
       </div>

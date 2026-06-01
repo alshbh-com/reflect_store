@@ -18,16 +18,16 @@ export function Hero() {
             <Sparkles className="size-3.5" />
             مجموعة فاخرة
           </div>
-          <h2 className="mt-4 text-3xl font-bold text-white leading-tight">
-            انعكاسك
+          <h2 className="mt-4 text-2xl font-bold text-white leading-tight">
+            لأن الجمال
             <br />
-            <span className="text-white/90">يستحق الأفضل</span>
+            <span className="text-white/90">مش شكل وبس</span>
           </h2>
-          <p className="mt-2 text-sm text-white/85 max-w-[260px]">
-            تشكيلة منتقاة من الموضة، الجمال والعناية — بإحساس راقٍ يليق بكِ.
+          <p className="mt-2 text-sm text-white/85 max-w-[280px]">
+            ده إحساس، عناية وستايل — بجودة تليق بيك وبيكِ.
           </p>
           <button className="mt-5 bg-white text-primary font-bold text-sm px-5 py-2.5 rounded-full shadow-lg hover:scale-105 transition-transform">
-            تسوّقي الآن
+            تسوّق الآن
           </button>
         </div>
       </motion.div>
