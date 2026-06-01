@@ -67,7 +67,7 @@ function TrackPage() {
 
         {notFound && (
           <div className="text-center py-8 text-sm text-muted-foreground">
-            لم نعثر على هذا الطلب — تأكدي من الرقم
+            لم نعثر على هذا الطلب — تأكد من الرقم
           </div>
         )}
 
