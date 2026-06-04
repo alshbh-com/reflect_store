@@ -130,6 +130,14 @@ fbq('track', 'PageView');`,
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+  useEffect(() => {
+    return router.subscribe("onResolved", () => {
+      if (typeof window !== "undefined" && (window as any).fbq) {
+        (window as any).fbq("track", "PageView");
+      }
+    });
+  }, [router]);
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
