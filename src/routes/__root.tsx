@@ -93,7 +93,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
-const FB_PIXEL_IDS = ["1316249417300084", "1709412439635775"];
+const FB_PIXEL_IDS = ["1316249417300084"];
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
