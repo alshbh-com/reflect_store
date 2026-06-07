@@ -42,6 +42,21 @@ function CheckoutPage() {
   const shipping = Number(selectedGov?.shipping_cost ?? 0);
   const grandTotal = total + shipping;
 
+  useEffect(() => {
+    if (!items.length) return;
+    trackMetaEvent("InitiateCheckout", {
+      custom_data: {
+        currency: "EGP",
+        value: total,
+        num_items: items.reduce((a, i) => a + i.quantity, 0),
+        content_ids: items.map((i) => i.productId),
+        contents: items.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+        content_type: "product",
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const submit = async () => {
     const parsed = schema.safeParse(form);
     if (!parsed.success) {
@@ -92,8 +107,28 @@ function CheckoutPage() {
       const { error: ie } = await supabase.from("order_items").insert(orderItems);
       if (ie) throw ie;
 
+      const purchaseItems = items.map((it) => ({ id: it.productId, quantity: it.quantity, item_price: it.price }));
+      const purchaseValue = grandTotal;
+      const purchasePhone = parsed.data.phone;
+      const purchaseName = parsed.data.name;
       clear();
       setOrderNumber(order.order_number);
+      trackMetaEvent("Purchase", {
+        user_data: {
+          phone: purchasePhone,
+          external_id: String(order.id),
+        },
+        custom_data: {
+          currency: "EGP",
+          value: purchaseValue,
+          order_id: order.order_number,
+          content_ids: purchaseItems.map((i) => i.id),
+          contents: purchaseItems,
+          num_items: purchaseItems.reduce((a, i) => a + (i.quantity ?? 1), 0),
+          content_type: "product",
+          content_name: purchaseName,
+        },
+      });
     } catch (e: any) {
       toast.error(e?.message ?? "حدث خطأ");
     } finally {
