@@ -76,7 +76,7 @@ export const sendMetaCapiEvent = createServerFn({ method: "POST" })
 
     if (!accessToken || !pixelId) {
       console.error("[meta-capi] missing token or pixel id");
-      return { ok: false, error: "not_configured" as const };
+      return { ok: false as const, status: 0, message: "not_configured" };
     }
 
     const ip =
