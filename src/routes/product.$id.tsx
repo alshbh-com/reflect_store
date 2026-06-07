@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ShoppingBag, Zap, Share2, Star, ChevronRight, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { PageShell } from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart";
+import { trackMetaEvent } from "@/lib/meta-pixel";
 
 export const Route = createFileRoute("/product/$id")({
   component: ProductPage,
