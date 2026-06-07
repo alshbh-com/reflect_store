@@ -119,16 +119,16 @@ export const sendMetaCapiEvent = createServerFn({ method: "POST" })
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      const text = await res.text();
       if (!res.ok) {
-        console.error("[meta-capi] failed", res.status, json);
-        return { ok: false, error: "request_failed" as const, status: res.status, details: json };
+        console.error("[meta-capi] failed", res.status, text);
+        return { ok: false as const, status: res.status, message: text.slice(0, 500) };
       }
-      console.log("[meta-capi] sent", data.event_name, data.event_id, json);
-      return { ok: true, response: json };
+      console.log("[meta-capi] sent", data.event_name, data.event_id, text);
+      return { ok: true as const, status: res.status };
     } catch (err) {
       console.error("[meta-capi] exception", err);
-      return { ok: false, error: "exception" as const, message: String(err) };
+      return { ok: false as const, status: 0, message: String(err).slice(0, 500) };
     }
   });
 
