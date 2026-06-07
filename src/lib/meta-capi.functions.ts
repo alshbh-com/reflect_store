@@ -2,9 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { createHash } from "node:crypto";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 // Meta Conversions API server-side dispatcher.
-// Token is read at request time from process.env — never bundled to client.
+// Access Token is read at request time from process.env — never bundled to client.
+// Pixel ID and Test Event Code can be overridden live from the `meta_settings` table.
 
 const EVENT_NAMES = [
   "PageView",
@@ -68,14 +70,65 @@ function normalizePhone(p?: string) {
   return digits || undefined;
 }
 
+async function loadSettings() {
+  try {
+    const { data } = await supabaseAdmin
+      .from("meta_settings")
+      .select("pixel_id,test_event_code")
+      .eq("id", "main")
+      .maybeSingle();
+    return {
+      pixel_id: data?.pixel_id || process.env.META_PIXEL_ID || process.env.VITE_META_PIXEL_ID || null,
+      test_event_code: data?.test_event_code || null,
+    };
+  } catch {
+    return {
+      pixel_id: process.env.META_PIXEL_ID || process.env.VITE_META_PIXEL_ID || null,
+      test_event_code: null,
+    };
+  }
+}
+
+async function writeLog(row: {
+  event_name: string;
+  event_id: string;
+  status: "success" | "error" | "skipped";
+  http_status?: number;
+  message?: string;
+  source_url?: string;
+  custom_data?: unknown;
+}) {
+  try {
+    await supabaseAdmin.from("meta_event_logs").insert({
+      event_name: row.event_name,
+      event_id: row.event_id,
+      status: row.status,
+      http_status: row.http_status ?? null,
+      message: row.message ?? null,
+      source_url: row.source_url ?? null,
+      custom_data: (row.custom_data as any) ?? null,
+    });
+  } catch (e) {
+    console.warn("[meta-capi] log insert failed", e);
+  }
+}
+
 export const sendMetaCapiEvent = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }) => {
     const accessToken = process.env.META_CAPI_ACCESS_TOKEN;
-    const pixelId = process.env.META_PIXEL_ID || process.env.VITE_META_PIXEL_ID;
+    const settings = await loadSettings();
+    const pixelId = settings.pixel_id;
 
     if (!accessToken || !pixelId) {
-      console.error("[meta-capi] missing token or pixel id");
+      await writeLog({
+        event_name: data.event_name,
+        event_id: data.event_id,
+        status: "skipped",
+        message: !accessToken ? "missing access token" : "missing pixel id",
+        source_url: data.event_source_url,
+        custom_data: data.custom_data,
+      });
       return { ok: false as const, status: 0, message: "not_configured" };
     }
 
@@ -97,6 +150,8 @@ export const sendMetaCapiEvent = createServerFn({ method: "POST" })
     };
     Object.keys(userData).forEach((k) => userData[k] === undefined && delete userData[k]);
 
+    const testCode = data.test_event_code || settings.test_event_code || undefined;
+
     const payload = {
       data: [
         {
@@ -109,7 +164,7 @@ export const sendMetaCapiEvent = createServerFn({ method: "POST" })
           custom_data: data.custom_data ?? { currency: "EGP" },
         },
       ],
-      ...(data.test_event_code ? { test_event_code: data.test_event_code } : {}),
+      ...(testCode ? { test_event_code: testCode } : {}),
     };
 
     try {
@@ -120,21 +175,65 @@ export const sendMetaCapiEvent = createServerFn({ method: "POST" })
         body: JSON.stringify(payload),
       });
       const text = await res.text();
+      await writeLog({
+        event_name: data.event_name,
+        event_id: data.event_id,
+        status: res.ok ? "success" : "error",
+        http_status: res.status,
+        message: text.slice(0, 1000),
+        source_url: data.event_source_url,
+        custom_data: data.custom_data,
+      });
       if (!res.ok) {
-        console.error("[meta-capi] failed", res.status, text);
         return { ok: false as const, status: res.status, message: text.slice(0, 500) };
       }
-      console.log("[meta-capi] sent", data.event_name, data.event_id, text);
       return { ok: true as const, status: res.status };
     } catch (err) {
-      console.error("[meta-capi] exception", err);
+      await writeLog({
+        event_name: data.event_name,
+        event_id: data.event_id,
+        status: "error",
+        message: String(err).slice(0, 1000),
+        source_url: data.event_source_url,
+        custom_data: data.custom_data,
+      });
       return { ok: false as const, status: 0, message: String(err).slice(0, 500) };
     }
   });
 
 export const getMetaCapiStatus = createServerFn({ method: "GET" }).handler(async () => {
+  const settings = await loadSettings();
   return {
     token_configured: Boolean(process.env.META_CAPI_ACCESS_TOKEN),
-    pixel_id: process.env.META_PIXEL_ID || process.env.VITE_META_PIXEL_ID || null,
+    pixel_id: settings.pixel_id,
+    test_event_code: settings.test_event_code,
   };
+});
+
+const updateSchema = z.object({
+  pixel_id: z.string().trim().max(64).optional(),
+  test_event_code: z.string().trim().max(64).nullable().optional(),
+});
+
+export const updateMetaSettings = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => updateSchema.parse(data))
+  .handler(async ({ data }) => {
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (data.pixel_id !== undefined) patch.pixel_id = data.pixel_id || null;
+    if (data.test_event_code !== undefined) patch.test_event_code = data.test_event_code || null;
+    const { error } = await supabaseAdmin
+      .from("meta_settings")
+      .upsert({ id: "main", ...patch });
+    if (error) return { ok: false as const, message: error.message };
+    return { ok: true as const };
+  });
+
+export const getMetaEventLogs = createServerFn({ method: "GET" }).handler(async () => {
+  const { data, error } = await supabaseAdmin
+    .from("meta_event_logs")
+    .select("id,event_name,event_id,status,http_status,message,source_url,created_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) return { logs: [] as any[], error: error.message };
+  return { logs: data ?? [] };
 });
