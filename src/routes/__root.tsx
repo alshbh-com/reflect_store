@@ -93,7 +93,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
-const FB_PIXEL_IDS = ["1316249417300084"];
+const FB_PIXEL_IDS = [import.meta.env.VITE_META_PIXEL_ID || "973698305545678"];
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
@@ -135,10 +135,11 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   useEffect(() => {
+    let first = true;
     return router.subscribe("onResolved", () => {
-      if (typeof window !== "undefined" && (window as any).fbq) {
-        (window as any).fbq("track", "PageView");
-      }
+      // Skip the very first resolve — initial pixel script already fired PageView.
+      if (first) { first = false; return; }
+      import("../lib/meta-pixel").then(({ trackMetaEvent }) => trackMetaEvent("PageView"));
     });
   }, [router]);
   return (

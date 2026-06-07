@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ShoppingBag, Zap, Share2, Star, ChevronRight, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { PageShell } from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart";
+import { trackMetaEvent } from "@/lib/meta-pixel";
 
 export const Route = createFileRoute("/product/$id")({
   component: ProductPage,
@@ -36,6 +37,20 @@ function ProductPage() {
       return data ?? [];
     },
   });
+
+  useEffect(() => {
+    if (!product) return;
+    const price = product.is_offer && product.offer_price ? Number(product.offer_price) : Number(product.price);
+    trackMetaEvent("ViewContent", {
+      custom_data: {
+        currency: "EGP",
+        value: price,
+        content_ids: [product.id],
+        content_name: product.name,
+        content_type: "product",
+      },
+    });
+  }, [product?.id]);
 
   if (isLoading) {
     return (
@@ -70,6 +85,16 @@ function ProductPage() {
 
   const handleAdd = () => {
     add({ productId: product.id, name: product.name, price: finalPrice, image: product.image_url });
+    trackMetaEvent("AddToCart", {
+      custom_data: {
+        currency: "EGP",
+        value: finalPrice,
+        content_ids: [product.id],
+        content_name: product.name,
+        content_type: "product",
+        contents: [{ id: product.id, quantity: 1, item_price: finalPrice }],
+      },
+    });
     toast.success("تمت الإضافة للسلة");
   };
 
