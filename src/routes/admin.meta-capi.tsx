@@ -42,6 +42,7 @@ function MetaCapiSettings() {
 
   const [pixelId, setPixelId] = useState("");
   const [testCode, setTestCode] = useState("");
+  const [accessToken, setAccessToken] = useState("");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -57,10 +58,15 @@ function MetaCapiSettings() {
     setSaving(true);
     try {
       const r = await saveSettings({
-        data: { pixel_id: pixelId.trim(), test_event_code: testCode.trim() || null },
+        data: {
+          pixel_id: pixelId.trim(),
+          test_event_code: testCode.trim() || null,
+          ...(accessToken.trim() ? { access_token: accessToken.trim() } : {}),
+        },
       });
       if ((r as any).ok) {
         toast.success("تم الحفظ");
+        setAccessToken("");
         statusQ.refetch();
       } else {
         toast.error((r as any).message ?? "فشل الحفظ");
@@ -148,6 +154,20 @@ function MetaCapiSettings() {
               dir="ltr"
             />
           </label>
+          <label className="block text-xs">
+            <span className="text-muted-foreground">
+              Access Token (CAPI) — اتركه فارغاً لإبقاء الحالي
+            </span>
+            <input
+              type="password"
+              value={accessToken}
+              onChange={(e) => setAccessToken(e.target.value)}
+              placeholder="EAA..."
+              autoComplete="off"
+              className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border text-sm"
+              dir="ltr"
+            />
+          </label>
           <button
             onClick={save}
             disabled={saving}
@@ -157,9 +177,7 @@ function MetaCapiSettings() {
             حفظ
           </button>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            ملاحظة: Access Token يُحفظ في Secrets فقط (
-            <code className="px-1 bg-secondary rounded">META_CAPI_ACCESS_TOKEN</code>) لأسباب أمنية، عدّله من Project Settings → Secrets.
-            تغيير Pixel ID هنا يطبَّق على CAPI فوراً؛ بكسل المتصفح يستعمل القيمة من <code className="px-1 bg-secondary rounded">.env</code> حتى إعادة البناء.
+            يمكنك إدارة Pixel ID والـ Access Token من هنا مباشرة — يطبَّق فوراً على CAPI، وبكسل المتصفح يتحدث عند إعادة تحميل الصفحة.
           </p>
         </div>
 

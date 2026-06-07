@@ -14,6 +14,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "../lib/theme";
 import { CartProvider } from "../lib/cart";
 import { Toaster } from "sonner";
+import { SocialProofToast } from "../components/SocialProofToast";
+import { getPublicPixelId } from "../lib/meta-capi.functions";
 
 function NotFoundComponent() {
   return (
@@ -131,6 +133,27 @@ fbq('track', 'PageView');`,
   );
 }
 
+function PixelSync() {
+  useEffect(() => {
+    // Pull the admin-saved Pixel ID and init it too if it differs from the build-time default.
+    getPublicPixelId({ data: undefined as any })
+      .then((r) => {
+        const id = r?.pixel_id;
+        if (!id || typeof window === "undefined" || !(window as any).fbq) return;
+        const baked = String(import.meta.env.VITE_META_PIXEL_ID || "1316249417300084");
+        if (String(id) === baked) return;
+        try {
+          (window as any).fbq("init", String(id));
+          (window as any).fbq("track", "PageView");
+        } catch (e) {
+          console.warn("[pixel-sync] init failed", e);
+        }
+      })
+      .catch(() => {});
+  }, []);
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
@@ -148,6 +171,8 @@ function RootComponent() {
         <CartProvider>
           <Outlet />
           <Toaster position="top-center" richColors closeButton />
+          <SocialProofToast />
+          <PixelSync />
         </CartProvider>
       </ThemeProvider>
     </QueryClientProvider>
