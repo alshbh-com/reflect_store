@@ -1,0 +1,1 @@
+UPDATE public.meta_settings SET pixel_id='1316249417300084';
