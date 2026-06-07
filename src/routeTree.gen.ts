@@ -21,6 +21,7 @@ import { Route as AxRouteImport } from './routes/ax'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
+import { Route as AdminMetaCapiRouteImport } from './routes/admin.meta-capi'
 
 const TrackRoute = TrackRouteImport.update({
   id: '/track',
@@ -82,10 +83,15 @@ const ProductIdRoute = ProductIdRouteImport.update({
   path: '/product/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminMetaCapiRoute = AdminMetaCapiRouteImport.update({
+  id: '/meta-capi',
+  path: '/meta-capi',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/ax': typeof AxRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
@@ -95,11 +101,12 @@ export interface FileRoutesByFullPath {
   '/policies': typeof PoliciesRoute
   '/search': typeof SearchRoute
   '/track': typeof TrackRoute
+  '/admin/meta-capi': typeof AdminMetaCapiRoute
   '/product/$id': typeof ProductIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/ax': typeof AxRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
@@ -109,12 +116,13 @@ export interface FileRoutesByTo {
   '/policies': typeof PoliciesRoute
   '/search': typeof SearchRoute
   '/track': typeof TrackRoute
+  '/admin/meta-capi': typeof AdminMetaCapiRoute
   '/product/$id': typeof ProductIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/ax': typeof AxRoute
   '/cart': typeof CartRoute
   '/categories': typeof CategoriesRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/policies': typeof PoliciesRoute
   '/search': typeof SearchRoute
   '/track': typeof TrackRoute
+  '/admin/meta-capi': typeof AdminMetaCapiRoute
   '/product/$id': typeof ProductIdRoute
 }
 export interface FileRouteTypes {
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/policies'
     | '/search'
     | '/track'
+    | '/admin/meta-capi'
     | '/product/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/policies'
     | '/search'
     | '/track'
+    | '/admin/meta-capi'
     | '/product/$id'
   id:
     | '__root__'
@@ -168,12 +179,13 @@ export interface FileRouteTypes {
     | '/policies'
     | '/search'
     | '/track'
+    | '/admin/meta-capi'
     | '/product/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AxRoute: typeof AxRoute
   CartRoute: typeof CartRoute
   CategoriesRoute: typeof CategoriesRoute
@@ -272,12 +284,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/meta-capi': {
+      id: '/admin/meta-capi'
+      path: '/meta-capi'
+      fullPath: '/admin/meta-capi'
+      preLoaderRoute: typeof AdminMetaCapiRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminMetaCapiRoute: typeof AdminMetaCapiRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminMetaCapiRoute: AdminMetaCapiRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   AxRoute: AxRoute,
   CartRoute: CartRoute,
   CategoriesRoute: CategoriesRoute,
@@ -292,3 +321,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
