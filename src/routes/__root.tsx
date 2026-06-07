@@ -14,6 +14,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "../lib/theme";
 import { CartProvider } from "../lib/cart";
 import { Toaster } from "sonner";
+import { SocialProofToast } from "../components/SocialProofToast";
+import { getPublicPixelId } from "../lib/meta-capi.functions";
 
 function NotFoundComponent() {
   return (
