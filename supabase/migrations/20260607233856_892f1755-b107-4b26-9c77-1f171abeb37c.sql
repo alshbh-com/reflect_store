@@ -1,0 +1,1 @@
+ALTER TABLE public.meta_settings ADD COLUMN IF NOT EXISTS access_token TEXT;

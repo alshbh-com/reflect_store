@@ -521,18 +521,21 @@ export type Database = {
       }
       meta_settings: {
         Row: {
+          access_token: string | null
           id: string
           pixel_id: string | null
           test_event_code: string | null
           updated_at: string
         }
         Insert: {
+          access_token?: string | null
           id?: string
           pixel_id?: string | null
           test_event_code?: string | null
           updated_at?: string
         }
         Update: {
+          access_token?: string | null
           id?: string
           pixel_id?: string | null
           test_event_code?: string | null
