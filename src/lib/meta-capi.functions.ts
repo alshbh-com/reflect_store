@@ -74,17 +74,19 @@ async function loadSettings() {
   try {
     const { data } = await supabaseAdmin
       .from("meta_settings")
-      .select("pixel_id,test_event_code")
+      .select("pixel_id,test_event_code,access_token")
       .eq("id", "main")
       .maybeSingle();
     return {
-      pixel_id: data?.pixel_id || process.env.META_PIXEL_ID || process.env.VITE_META_PIXEL_ID || null,
-      test_event_code: data?.test_event_code || null,
+      pixel_id: (data as any)?.pixel_id || process.env.META_PIXEL_ID || process.env.VITE_META_PIXEL_ID || null,
+      test_event_code: (data as any)?.test_event_code || null,
+      access_token: (data as any)?.access_token || process.env.META_CAPI_ACCESS_TOKEN || null,
     };
   } catch {
     return {
       pixel_id: process.env.META_PIXEL_ID || process.env.VITE_META_PIXEL_ID || null,
       test_event_code: null,
+      access_token: process.env.META_CAPI_ACCESS_TOKEN || null,
     };
   }
 }
@@ -116,8 +118,8 @@ async function writeLog(row: {
 export const sendMetaCapiEvent = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }) => {
-    const accessToken = process.env.META_CAPI_ACCESS_TOKEN;
     const settings = await loadSettings();
+    const accessToken = settings.access_token;
     const pixelId = settings.pixel_id;
 
     if (!accessToken || !pixelId) {
@@ -204,15 +206,22 @@ export const sendMetaCapiEvent = createServerFn({ method: "POST" })
 export const getMetaCapiStatus = createServerFn({ method: "GET" }).handler(async () => {
   const settings = await loadSettings();
   return {
-    token_configured: Boolean(process.env.META_CAPI_ACCESS_TOKEN),
+    token_configured: Boolean(settings.access_token),
     pixel_id: settings.pixel_id,
     test_event_code: settings.test_event_code,
   };
 });
 
+// Public, safe-to-call: returns only the pixel_id so the browser pixel script can stay in sync with admin changes.
+export const getPublicPixelId = createServerFn({ method: "GET" }).handler(async () => {
+  const settings = await loadSettings();
+  return { pixel_id: settings.pixel_id };
+});
+
 const updateSchema = z.object({
   pixel_id: z.string().trim().max(64).optional(),
   test_event_code: z.string().trim().max(64).nullable().optional(),
+  access_token: z.string().trim().max(1024).nullable().optional(),
 });
 
 export const updateMetaSettings = createServerFn({ method: "POST" })
@@ -221,6 +230,7 @@ export const updateMetaSettings = createServerFn({ method: "POST" })
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (data.pixel_id !== undefined) patch.pixel_id = data.pixel_id || null;
     if (data.test_event_code !== undefined) patch.test_event_code = data.test_event_code || null;
+    if (data.access_token !== undefined) patch.access_token = data.access_token || null;
     const { error } = await supabaseAdmin
       .from("meta_settings")
       .upsert({ id: "main", ...patch });
