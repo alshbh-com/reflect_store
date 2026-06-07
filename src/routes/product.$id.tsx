@@ -38,6 +38,20 @@ function ProductPage() {
     },
   });
 
+  useEffect(() => {
+    if (!product) return;
+    const price = product.is_offer && product.offer_price ? Number(product.offer_price) : Number(product.price);
+    trackMetaEvent("ViewContent", {
+      custom_data: {
+        currency: "EGP",
+        value: price,
+        content_ids: [product.id],
+        content_name: product.name,
+        content_type: "product",
+      },
+    });
+  }, [product?.id]);
+
   if (isLoading) {
     return (
       <PageShell>
@@ -71,6 +85,16 @@ function ProductPage() {
 
   const handleAdd = () => {
     add({ productId: product.id, name: product.name, price: finalPrice, image: product.image_url });
+    trackMetaEvent("AddToCart", {
+      custom_data: {
+        currency: "EGP",
+        value: finalPrice,
+        content_ids: [product.id],
+        content_name: product.name,
+        content_type: "product",
+        contents: [{ id: product.id, quantity: 1, item_price: finalPrice }],
+      },
+    });
     toast.success("تمت الإضافة للسلة");
   };
 
