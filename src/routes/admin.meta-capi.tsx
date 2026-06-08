@@ -2,22 +2,58 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, CheckCircle2, AlertCircle, ExternalLink, Save, RefreshCw } from "lucide-react";
+import { AlertCircle, CheckCircle2, ExternalLink, Loader2, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
+
 import { PageShell } from "@/components/PageShell";
 import {
   getMetaCapiStatus,
+  getMetaEventLogs,
   sendMetaCapiEvent,
   updateMetaSettings,
-  getMetaEventLogs,
 } from "@/lib/meta-capi.functions";
 
 export const Route = createFileRoute("/admin/meta-capi")({
-  head: () => ({ meta: [{ title: "إعدادات Meta CAPI" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [{ title: "إعدادات Meta CAPI" }, { name: "robots", content: "noindex" }],
+  }),
   component: MetaCapiSettings,
 });
 
 const TOKEN_KEY = "reflect-admin-token";
+
+type MetaWindow = Window & {
+  fbq?: (
+    command: "init" | "track",
+    eventOrPixel: string,
+    params?: object,
+    options?: object,
+  ) => void;
+};
+
+type MetaLog = {
+  id: string;
+  event_name: string;
+  event_id: string;
+  status: "success" | "error" | "skipped";
+  http_status: number | null;
+  message: string | null;
+  created_at: string;
+};
+
+function fireBrowserPixel(pixelId: string, eventId: string) {
+  if (typeof window === "undefined" || !pixelId.trim()) return false;
+  const w = window as MetaWindow;
+  if (!w.fbq) return false;
+  try {
+    w.fbq("init", pixelId.trim());
+    w.fbq("track", "PageView", {}, { eventID: eventId });
+    return true;
+  } catch (e) {
+    console.warn("[meta-pixel] admin test failed", e);
+    return false;
+  }
+}
 
 function MetaCapiSettings() {
   const [authed, setAuthed] = useState(false);
@@ -30,12 +66,12 @@ function MetaCapiSettings() {
 
   const statusQ = useQuery({
     queryKey: ["meta-capi-status"],
-    queryFn: () => fetchStatus({ data: undefined as any }),
+    queryFn: () => fetchStatus(),
     enabled: authed,
   });
   const logsQ = useQuery({
     queryKey: ["meta-event-logs"],
-    queryFn: () => fetchLogs({ data: undefined as any }),
+    queryFn: () => fetchLogs(),
     enabled: authed,
     refetchInterval: 5000,
   });
@@ -47,6 +83,8 @@ function MetaCapiSettings() {
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
+  const logs = (logsQ.data?.logs ?? []) as MetaLog[];
+
   useEffect(() => {
     if (statusQ.data) {
       setPixelId(statusQ.data.pixel_id ?? "");
@@ -57,19 +95,34 @@ function MetaCapiSettings() {
   const save = async () => {
     setSaving(true);
     try {
-      const r = await saveSettings({
+      const response = await saveSettings({
         data: {
           pixel_id: pixelId.trim(),
           test_event_code: testCode.trim() || null,
           ...(accessToken.trim() ? { access_token: accessToken.trim() } : {}),
         },
       });
-      if ((r as any).ok) {
-        toast.success("تم الحفظ");
+      if (response.ok) {
+        const eventId = `admin_save_${Date.now()}`;
+        const browserOk = fireBrowserPixel(pixelId, eventId);
+        const testPayload = {
+          event_name: "PageView",
+          event_id: eventId,
+          event_source_url: window.location.href,
+        } as const;
+        fireTest({ data: testPayload }).finally(() => logsQ.refetch());
+        toast.success(
+          browserOk ? "تم الحفظ وتشغيل البكسل" : "تم الحفظ — أعد تحميل الصفحة لاختبار البكسل",
+        );
+        setResult(
+          browserOk
+            ? `تم إرسال PageView من المتصفح إلى Pixel: ${pixelId.trim()}`
+            : "تم الحفظ، لكن سكربت Meta Pixel لم يكن جاهزاً في المتصفح.",
+        );
         setAccessToken("");
         statusQ.refetch();
       } else {
-        toast.error((r as any).message ?? "فشل الحفظ");
+        toast.error("message" in response ? response.message : "فشل الحفظ");
       }
     } finally {
       setSaving(false);
@@ -80,17 +133,16 @@ function MetaCapiSettings() {
     setTesting(true);
     setResult(null);
     try {
-      const r = await fireTest({
-        data: {
-          event_name: "PageView",
-          event_id: `test_${Date.now()}`,
-          event_source_url: window.location.href,
-        } as any,
-      });
-      setResult(JSON.stringify(r, null, 2));
+      const testPayload = {
+        event_name: "PageView",
+        event_id: `test_${Date.now()}`,
+        event_source_url: window.location.href,
+      } as const;
+      const response = await fireTest({ data: testPayload });
+      setResult(JSON.stringify(response, null, 2));
       logsQ.refetch();
-    } catch (e: any) {
-      setResult(`خطأ: ${e?.message ?? String(e)}`);
+    } catch (e: unknown) {
+      setResult(`خطأ: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setTesting(false);
     }
@@ -100,7 +152,11 @@ function MetaCapiSettings() {
     return (
       <PageShell>
         <div className="px-4 pt-12 text-center text-sm text-muted-foreground">
-          سجّل الدخول من <a href="/admin" className="text-primary underline">لوحة التحكم</a> أولاً.
+          سجّل الدخول من{" "}
+          <a href="/admin" className="text-primary underline">
+            لوحة التحكم
+          </a>{" "}
+          أولاً.
         </div>
       </PageShell>
     );
@@ -117,7 +173,11 @@ function MetaCapiSettings() {
             <Loader2 className="size-5 animate-spin text-primary" />
           ) : (
             <>
-              <StatusRow ok={!!statusQ.data?.pixel_id} label="Pixel ID" value={statusQ.data?.pixel_id ?? "غير محدد"} />
+              <StatusRow
+                ok={!!statusQ.data?.pixel_id}
+                label="Pixel ID"
+                value={statusQ.data?.pixel_id ?? "غير محدد"}
+              />
               <StatusRow
                 ok={!!statusQ.data?.token_configured}
                 label="Access Token"
@@ -139,7 +199,7 @@ function MetaCapiSettings() {
             <input
               value={pixelId}
               onChange={(e) => setPixelId(e.target.value)}
-              placeholder="1709412439635775"
+              placeholder="1316249417300084"
               className="mt-1 w-full px-3 py-2 rounded-xl bg-card border border-border text-sm"
               dir="ltr"
             />
@@ -177,7 +237,7 @@ function MetaCapiSettings() {
             حفظ
           </button>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            يمكنك إدارة Pixel ID والـ Access Token من هنا مباشرة — يطبَّق فوراً على CAPI، وبكسل المتصفح يتحدث عند إعادة تحميل الصفحة.
+            عند الحفظ سيتم تشغيل PageView فوراً على نفس Pixel ID حتى يظهر في الحساب الإعلاني.
           </p>
         </div>
 
@@ -209,29 +269,47 @@ function MetaCapiSettings() {
         <div className="glass rounded-2xl p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-sm">آخر 50 حدث</h2>
-            <button onClick={() => logsQ.refetch()} className="text-xs text-muted-foreground inline-flex items-center gap-1">
+            <button
+              onClick={() => logsQ.refetch()}
+              className="text-xs text-muted-foreground inline-flex items-center gap-1"
+            >
               <RefreshCw className="size-3" /> تحديث
             </button>
           </div>
           <div className="space-y-1.5 max-h-96 overflow-auto">
-            {(logsQ.data?.logs ?? []).map((l: any) => (
-              <div key={l.id} className="text-[11px] flex items-center gap-2 border border-border rounded-lg px-2 py-1.5">
+            {logs.map((log) => (
+              <div
+                key={log.id}
+                className="text-[11px] flex items-center gap-2 border border-border rounded-lg px-2 py-1.5"
+              >
                 <span
                   className={`size-2 rounded-full shrink-0 ${
-                    l.status === "success" ? "bg-success" : l.status === "skipped" ? "bg-muted-foreground" : "bg-destructive"
+                    log.status === "success"
+                      ? "bg-success"
+                      : log.status === "skipped"
+                        ? "bg-muted-foreground"
+                        : "bg-destructive"
                   }`}
                 />
-                <span className="font-semibold w-24 shrink-0" dir="ltr">{l.event_name}</span>
-                <span className="text-muted-foreground shrink-0" dir="ltr">{l.http_status ?? "—"}</span>
-                <span className="truncate flex-1 text-muted-foreground" dir="ltr" title={l.message ?? ""}>
-                  {l.message ?? l.event_id}
+                <span className="font-semibold w-24 shrink-0" dir="ltr">
+                  {log.event_name}
                 </span>
                 <span className="text-muted-foreground shrink-0" dir="ltr">
-                  {new Date(l.created_at).toLocaleTimeString()}
+                  {log.http_status ?? "—"}
+                </span>
+                <span
+                  className="truncate flex-1 text-muted-foreground"
+                  dir="ltr"
+                  title={log.message ?? ""}
+                >
+                  {log.message ?? log.event_id}
+                </span>
+                <span className="text-muted-foreground shrink-0" dir="ltr">
+                  {new Date(log.created_at).toLocaleTimeString()}
                 </span>
               </div>
             ))}
-            {!logsQ.isLoading && (logsQ.data?.logs ?? []).length === 0 && (
+            {!logsQ.isLoading && logs.length === 0 && (
               <p className="text-xs text-muted-foreground text-center py-4">لا توجد أحداث بعد.</p>
             )}
           </div>
@@ -247,7 +325,8 @@ function MetaCapiSettings() {
             <li>• Purchase</li>
           </ul>
           <p className="text-xs text-muted-foreground mt-2">
-            كل حدث يُرسل بـ <code className="px-1 bg-secondary rounded">event_id</code> موحّد بين Pixel و CAPI لمنع الازدواجية.
+            كل حدث يُرسل بـ <code className="px-1 bg-secondary rounded">event_id</code> موحّد بين
+            Pixel و CAPI لمنع الازدواجية.
           </p>
         </div>
       </div>
@@ -259,10 +338,16 @@ function StatusRow({ ok, label, value }: { ok: boolean; label: string; value: st
   return (
     <div className="flex items-center justify-between text-sm">
       <div className="flex items-center gap-2">
-        {ok ? <CheckCircle2 className="size-4 text-success" /> : <AlertCircle className="size-4 text-destructive" />}
+        {ok ? (
+          <CheckCircle2 className="size-4 text-success" />
+        ) : (
+          <AlertCircle className="size-4 text-destructive" />
+        )}
         <span className="font-semibold">{label}</span>
       </div>
-      <span className="text-xs text-muted-foreground truncate max-w-[180px]" dir="ltr">{value}</span>
+      <span className="text-xs text-muted-foreground truncate max-w-[180px]" dir="ltr">
+        {value}
+      </span>
     </div>
   );
 }
