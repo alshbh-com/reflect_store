@@ -137,7 +137,7 @@ fbq('track', 'PageView');`,
 function PixelSync() {
   useEffect(() => {
     // Pull the admin-saved Pixel ID and init it too if it differs from the build-time default.
-        getPublicPixelId()
+    getPublicPixelId()
       .then((r) => {
         const id = r?.pixel_id;
         if (!id || typeof window === "undefined") return;
