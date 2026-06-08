@@ -297,7 +297,11 @@ function MetaCapiSettings() {
                 <span className="text-muted-foreground shrink-0" dir="ltr">
                   {log.http_status ?? "—"}
                 </span>
-                <span className="truncate flex-1 text-muted-foreground" dir="ltr" title={log.message ?? ""}>
+                <span
+                  className="truncate flex-1 text-muted-foreground"
+                  dir="ltr"
+                  title={log.message ?? ""}
+                >
                   {log.message ?? log.event_id}
                 </span>
                 <span className="text-muted-foreground shrink-0" dir="ltr">
@@ -321,8 +325,8 @@ function MetaCapiSettings() {
             <li>• Purchase</li>
           </ul>
           <p className="text-xs text-muted-foreground mt-2">
-            كل حدث يُرسل بـ <code className="px-1 bg-secondary rounded">event_id</code> موحّد بين Pixel
-            و CAPI لمنع الازدواجية.
+            كل حدث يُرسل بـ <code className="px-1 bg-secondary rounded">event_id</code> موحّد بين
+            Pixel و CAPI لمنع الازدواجية.
           </p>
         </div>
       </div>
