@@ -12,6 +12,7 @@ import {
   sendMetaCapiEvent,
   updateMetaSettings,
 } from "@/lib/meta-capi.functions";
+import { rememberMetaPixelId, trackMetaBrowserEvent } from "@/lib/meta-browser-pixel";
 
 export const Route = createFileRoute("/admin/meta-capi")({
   head: () => ({
@@ -22,15 +23,6 @@ export const Route = createFileRoute("/admin/meta-capi")({
 
 const TOKEN_KEY = "reflect-admin-token";
 
-type MetaWindow = Window & {
-  fbq?: (
-    command: "init" | "track",
-    eventOrPixel: string,
-    params?: object,
-    options?: object,
-  ) => void;
-};
-
 type MetaLog = {
   id: string;
   event_name: string;
@@ -40,20 +32,6 @@ type MetaLog = {
   message: string | null;
   created_at: string;
 };
-
-function fireBrowserPixel(pixelId: string, eventId: string) {
-  if (typeof window === "undefined" || !pixelId.trim()) return false;
-  const w = window as MetaWindow;
-  if (!w.fbq) return false;
-  try {
-    w.fbq("init", pixelId.trim());
-    w.fbq("track", "PageView", {}, { eventID: eventId });
-    return true;
-  } catch (e) {
-    console.warn("[meta-pixel] admin test failed", e);
-    return false;
-  }
-}
 
 function MetaCapiSettings() {
   const [authed, setAuthed] = useState(false);
@@ -104,7 +82,8 @@ function MetaCapiSettings() {
       });
       if (response.ok) {
         const eventId = `admin_save_${Date.now()}`;
-        const browserOk = fireBrowserPixel(pixelId, eventId);
+        const savedPixelId = rememberMetaPixelId(pixelId);
+        const browserOk = trackMetaBrowserEvent("PageView", { pixelId: savedPixelId, eventId });
         const testPayload = {
           event_name: "PageView",
           event_id: eventId,
@@ -116,8 +95,8 @@ function MetaCapiSettings() {
         );
         setResult(
           browserOk
-            ? `تم إرسال PageView من المتصفح إلى Pixel: ${pixelId.trim()}`
-            : "تم الحفظ، لكن سكربت Meta Pixel لم يكن جاهزاً في المتصفح.",
+            ? `تم حفظ وتشغيل Pixel فوراً: ${savedPixelId}`
+            : "تم الحفظ، لكن رقم البكسل غير صحيح.",
         );
         setAccessToken("");
         statusQ.refetch();
