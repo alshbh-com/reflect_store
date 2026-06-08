@@ -137,7 +137,7 @@ fbq('track', 'PageView');`,
 function PixelSync() {
   useEffect(() => {
     // Pull the admin-saved Pixel ID and init it too if it differs from the build-time default.
-    getPublicPixelId({ data: undefined as any })
+        getPublicPixelId()
       .then((r) => {
         const id = r?.pixel_id;
         if (!id || typeof window === "undefined") return;
@@ -162,7 +162,10 @@ function RootComponent() {
     let first = true;
     return router.subscribe("onResolved", () => {
       // Skip the very first resolve — initial pixel script already fired PageView.
-      if (first) { first = false; return; }
+      if (first) {
+        first = false;
+        return;
+      }
       import("../lib/meta-pixel").then(({ trackMetaEvent }) => trackMetaEvent("PageView"));
     });
   }, [router]);
