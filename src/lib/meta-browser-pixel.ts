@@ -105,6 +105,11 @@ export function trackMetaBrowserEvent(
     return true;
   }
 
-  fbq("track", event, options.customData ?? {}, options.eventId ? { eventID: options.eventId } : {});
+  fbq(
+    "track",
+    event,
+    options.customData ?? {},
+    options.eventId ? { eventID: options.eventId } : {},
+  );
   return true;
 }
