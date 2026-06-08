@@ -2,6 +2,7 @@
 // Generates a shared event_id used by both fbq and CAPI for deduplication.
 
 import { sendMetaCapiEvent } from "./meta-capi.functions";
+import { trackMetaBrowserEvent } from "./meta-browser-pixel";
 
 type EventName = "PageView" | "ViewContent" | "AddToCart" | "InitiateCheckout" | "Purchase";
 
@@ -41,13 +42,7 @@ export function trackMetaEvent(
   const eventId = uuid();
 
   // Browser pixel
-  if (typeof window !== "undefined" && (window as any).fbq) {
-    try {
-      (window as any).fbq("track", event, opts.custom_data ?? {}, { eventID: eventId });
-    } catch (e) {
-      console.warn("[meta-pixel] fbq failed", e);
-    }
-  }
+  trackMetaBrowserEvent(event, { eventId, customData: opts.custom_data });
 
   // Server-side CAPI (fire and forget)
   const fbp = getCookie("_fbp");
