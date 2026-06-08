@@ -16,6 +16,7 @@ import { CartProvider } from "../lib/cart";
 import { Toaster } from "sonner";
 import { SocialProofToast } from "../components/SocialProofToast";
 import { getPublicPixelId } from "../lib/meta-capi.functions";
+import { rememberMetaPixelId, trackMetaBrowserEvent } from "../lib/meta-browser-pixel";
 
 function NotFoundComponent() {
   return (
@@ -136,15 +137,15 @@ fbq('track', 'PageView');`,
 function PixelSync() {
   useEffect(() => {
     // Pull the admin-saved Pixel ID and init it too if it differs from the build-time default.
-    getPublicPixelId({ data: undefined as any })
+    getPublicPixelId()
       .then((r) => {
         const id = r?.pixel_id;
-        if (!id || typeof window === "undefined" || !(window as any).fbq) return;
+        if (!id || typeof window === "undefined") return;
         const baked = String(import.meta.env.VITE_META_PIXEL_ID || "1316249417300084");
+        rememberMetaPixelId(String(id));
         if (String(id) === baked) return;
         try {
-          (window as any).fbq("init", String(id));
-          (window as any).fbq("track", "PageView");
+          trackMetaBrowserEvent("PageView", { pixelId: String(id) });
         } catch (e) {
           console.warn("[pixel-sync] init failed", e);
         }
@@ -161,7 +162,10 @@ function RootComponent() {
     let first = true;
     return router.subscribe("onResolved", () => {
       // Skip the very first resolve — initial pixel script already fired PageView.
-      if (first) { first = false; return; }
+      if (first) {
+        first = false;
+        return;
+      }
       import("../lib/meta-pixel").then(({ trackMetaEvent }) => trackMetaEvent("PageView"));
     });
   }, [router]);
