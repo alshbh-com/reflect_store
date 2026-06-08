@@ -52,10 +52,10 @@ export function ensureMetaPixel() {
   const w = window as MetaWindow;
   if (w.fbq) return w.fbq;
 
-  const fbq = function fbq(...args: unknown[]) {
+  const fbq = ((...args: unknown[]) => {
     if (fbq.callMethod) fbq.callMethod(...args);
     else fbq.queue?.push(args);
-  } as Fbq;
+  }) as Fbq;
 
   w.fbq = fbq;
   w._fbq = fbq;
@@ -95,7 +95,13 @@ export function trackMetaBrowserEvent(
   if (pixelId) {
     rememberMetaPixelId(pixelId);
     fbq("init", pixelId);
-    fbq("trackSingle", pixelId, event, options.customData ?? {}, options.eventId ? { eventID: options.eventId } : {});
+    fbq(
+      "trackSingle",
+      pixelId,
+      event,
+      options.customData ?? {},
+      options.eventId ? { eventID: options.eventId } : {},
+    );
     return true;
   }
 
