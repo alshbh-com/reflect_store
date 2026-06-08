@@ -19,6 +19,20 @@ export const Route = createFileRoute("/admin/meta-capi")({
 
 const TOKEN_KEY = "reflect-admin-token";
 
+function fireBrowserPixel(pixelId: string, eventId: string) {
+  if (typeof window === "undefined" || !pixelId.trim()) return false;
+  const w = window as any;
+  if (!w.fbq) return false;
+  try {
+    w.fbq("init", pixelId.trim());
+    w.fbq("track", "PageView", {}, { eventID: eventId });
+    return true;
+  } catch (e) {
+    console.warn("[meta-pixel] admin test failed", e);
+    return false;
+  }
+}
+
 function MetaCapiSettings() {
   const [authed, setAuthed] = useState(false);
   useEffect(() => setAuthed(!!localStorage.getItem(TOKEN_KEY)), []);
@@ -65,7 +79,21 @@ function MetaCapiSettings() {
         },
       });
       if ((r as any).ok) {
-        toast.success("تم الحفظ");
+        const eventId = `admin_save_${Date.now()}`;
+        const browserOk = fireBrowserPixel(pixelId, eventId);
+        fireTest({
+          data: {
+            event_name: "PageView",
+            event_id: eventId,
+            event_source_url: window.location.href,
+          } as any,
+        }).finally(() => logsQ.refetch());
+        toast.success(browserOk ? "تم الحفظ وتشغيل البكسل" : "تم الحفظ — أعد تحميل الصفحة لاختبار البكسل");
+        setResult(
+          browserOk
+            ? `تم إرسال PageView من المتصفح إلى Pixel: ${pixelId.trim()}`
+            : "تم الحفظ، لكن سكربت Meta Pixel لم يكن جاهزاً في المتصفح.",
+        );
         setAccessToken("");
         statusQ.refetch();
       } else {
