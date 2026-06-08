@@ -19,9 +19,13 @@ export const Route = createFileRoute("/admin/meta-capi")({
 
 const TOKEN_KEY = "reflect-admin-token";
 
+type MetaWindow = Window & {
+  fbq?: (command: "init" | "track", eventOrPixel: string, params?: object, options?: object) => void;
+};
+
 function fireBrowserPixel(pixelId: string, eventId: string) {
   if (typeof window === "undefined" || !pixelId.trim()) return false;
-  const w = window as any;
+  const w = window as MetaWindow;
   if (!w.fbq) return false;
   try {
     w.fbq("init", pixelId.trim());
@@ -81,14 +85,17 @@ function MetaCapiSettings() {
       if ((r as any).ok) {
         const eventId = `admin_save_${Date.now()}`;
         const browserOk = fireBrowserPixel(pixelId, eventId);
+        const testPayload = {
+          event_name: "PageView",
+          event_id: eventId,
+          event_source_url: window.location.href,
+        } as const;
         fireTest({
-          data: {
-            event_name: "PageView",
-            event_id: eventId,
-            event_source_url: window.location.href,
-          } as any,
+          data: testPayload,
         }).finally(() => logsQ.refetch());
-        toast.success(browserOk ? "تم الحفظ وتشغيل البكسل" : "تم الحفظ — أعد تحميل الصفحة لاختبار البكسل");
+        toast.success(
+          browserOk ? "تم الحفظ وتشغيل البكسل" : "تم الحفظ — أعد تحميل الصفحة لاختبار البكسل",
+        );
         setResult(
           browserOk
             ? `تم إرسال PageView من المتصفح إلى Pixel: ${pixelId.trim()}`
@@ -108,17 +115,18 @@ function MetaCapiSettings() {
     setTesting(true);
     setResult(null);
     try {
+      const testPayload = {
+        event_name: "PageView",
+        event_id: `test_${Date.now()}`,
+        event_source_url: window.location.href,
+      } as const;
       const r = await fireTest({
-        data: {
-          event_name: "PageView",
-          event_id: `test_${Date.now()}`,
-          event_source_url: window.location.href,
-        } as any,
+        data: testPayload,
       });
       setResult(JSON.stringify(r, null, 2));
       logsQ.refetch();
-    } catch (e: any) {
-      setResult(`خطأ: ${e?.message ?? String(e)}`);
+    } catch (e: unknown) {
+      setResult(`خطأ: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setTesting(false);
     }
